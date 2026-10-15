@@ -21,32 +21,38 @@ const store = {
 const WIKI_API = "https://de.wikipedia.org/w/api.php";
 const wikiUrl = title => "https://de.wikipedia.org/wiki/" + encodeURIComponent(title.replace(/ /g, "_"));
 
-// Porträts aller Komponisten mit einer einzigen Anfrage laden (und eine Woche merken).
+// Porträts aller Komponisten laden (höchstens 50 pro Anfrage) und eine Woche merken.
+// Kommen neue Komponisten dazu, wird der Zwischenspeicher neu aufgebaut.
 let portraits = (() => {
   const cached = store.get("portraits");
-  return cached && Date.now() - cached.time < 7 * 864e5 ? cached.data : null;
+  const fresh = cached && Date.now() - cached.time < 7 * 864e5 && cached.count === COMPOSERS.length;
+  return fresh ? cached.data : null;
 })();
 let portraitsPromise = null;
 function loadPortraits() {
   if (portraits) return Promise.resolve(portraits);
   if (portraitsPromise) return portraitsPromise;
-  const params = new URLSearchParams({
-    action: "query", format: "json", origin: "*", redirects: "1",
-    prop: "pageimages", pithumbsize: "500", pilimit: "50",
-    titles: COMPOSERS.map(c => c.wiki).join("|"),
-  });
-  portraitsPromise = fetch(`${WIKI_API}?${params}`)
-    .then(r => r.json())
-    .then(json => {
-      const data = {};
+  const titles = COMPOSERS.map(c => c.wiki);
+  const chunks = [];
+  for (let i = 0; i < titles.length; i += 50) chunks.push(titles.slice(i, i + 50));
+  const data = {};
+  portraitsPromise = Promise.all(chunks.map(chunk => {
+    const params = new URLSearchParams({
+      action: "query", format: "json", origin: "*", redirects: "1",
+      prop: "pageimages", pithumbsize: "500", pilimit: "50", titles: chunk.join("|"),
+    });
+    return fetch(`${WIKI_API}?${params}`).then(r => r.json()).then(json => {
       for (const page of Object.values(json.query.pages)) {
         if (page.thumbnail) data[page.title] = page.thumbnail.source;
       }
+    });
+  }))
+    .then(() => {
       portraits = data;
-      store.set("portraits", { time: Date.now(), data });
+      store.set("portraits", { time: Date.now(), count: COMPOSERS.length, data });
       return data;
     })
-    .catch(() => ({}));
+    .catch(() => data);
   return portraitsPromise;
 }
 
@@ -130,13 +136,13 @@ const norm = s => String(s).toLowerCase()
 
 // Passende Vorschläge: jedes getippte Wort muss den Anfang eines Wortes im Vorschlag bilden.
 // Treffer ganz am Anfang kommen zuerst („vier“ findet „Die vier Jahreszeiten“, aber nicht „Klavierkonzert“).
-function suggest(options, query, max = 8) {
+function suggest(options, query, max = 8, extra = {}) {
   const q = norm(query);
   if (!q) return [];
   const qWords = q.split(" ");
   const ranked = [];
   for (const o of options) {
-    const n = norm(o);
+    const n = norm(o + " " + (extra[o] || ""));
     const words = n.split(" ");
     if (qWords.every(qw => words.some(w => w.startsWith(qw)))) ranked.push([n.startsWith(q) ? 0 : 1, o]);
   }
@@ -144,7 +150,8 @@ function suggest(options, query, max = 8) {
 }
 
 // Hängt eine Vorschlagsliste an ein Textfeld (Pfeiltasten, Enter und Tippen werden unterstützt).
-function attachAutocomplete(input, options) {
+// „extra“ ordnet einem Vorschlag weitere Suchbegriffe zu (z. B. andere Schreibweisen).
+function attachAutocomplete(input, options, extra = {}) {
   const list = document.createElement("ul");
   list.className = "ac-list";
   list.hidden = true;
@@ -154,7 +161,7 @@ function attachAutocomplete(input, options) {
   let active = -1;
 
   const draw = () => {
-    items = suggest(options, input.value);
+    items = suggest(options, input.value, 8, extra);
     active = -1;
     list.innerHTML = items.map((o, i) => `<li data-i="${i}">${esc(o)}</li>`).join("");
     list.hidden = !items.length || (items.length === 1 && norm(items[0]) === norm(input.value));
@@ -181,14 +188,21 @@ function attachAutocomplete(input, options) {
 const COMPOSER_ALIASES = {
   haendel: ["Handel"], tschaikowsky: ["Tschaikowsky", "Tchaikovsky"], rachmaninow: ["Rachmaninoff", "Rachmaninov"],
   mussorgsky: ["Mussorgsky"], mendelssohn: ["Mendelssohn"],
+  skrjabin: ["Scriabin", "Skriabin"], prokofjew: ["Prokofiev", "Prokofieff"], strawinsky: ["Stravinsky"],
+  rimski: ["Rimsky-Korsakov", "Rimski"], falla: ["de Falla"], saintsaens: ["Saint-Saens"],
+  strauss: ["Johann Strauss", "Strauss Sohn"],
 };
 const surname = c => c.name.replace(/\s*\(.*\)/, "").split(" ").pop();
-const composerAnswers = c => [c.name, c.wiki, surname(c), ...(COMPOSER_ALIASES[c.id] || [])].map(norm);
+// Nachnamen, die mehrere Komponisten tragen (z. B. Strauss), reichen allein nicht als Antwort.
+const SHARED_SURNAMES = new Set(COMPOSERS.map(surname).filter((s, i, all) => all.indexOf(s) !== i));
+const composerAnswers = c => [c.name, c.wiki, ...(SHARED_SURNAMES.has(surname(c)) ? [] : [surname(c)]),
+  ...(COMPOSER_ALIASES[c.id] || [])].map(norm);
 function findComposer(text) {
   const n = norm(text);
   return n ? COMPOSERS.find(c => composerAnswers(c).includes(n)) || null : null;
 }
 const COMPOSER_NAMES = COMPOSERS.map(c => c.name);
+const COMPOSER_EXTRA = Object.fromEntries(COMPOSERS.map(c => [c.name, (COMPOSER_ALIASES[c.id] || []).join(" ")]));
 const PIECE_TITLES = [...new Set(PIECES.map(p => p.title))];
 const PERIOD_NAMES = PERIODS.map(p => p.name);
 
@@ -589,7 +603,7 @@ function renderQuestion(game) {
     piece: document.getElementById("hc-piece"),
   };
   attachAutocomplete(fields.period, PERIOD_NAMES);
-  attachAutocomplete(fields.composer, COMPOSER_NAMES);
+  attachAutocomplete(fields.composer, COMPOSER_NAMES, COMPOSER_EXTRA);
   attachAutocomplete(fields.piece, PIECE_TITLES);
 
   form.addEventListener("submit", e => {
@@ -744,7 +758,7 @@ function renderWhoQuestion(game) {
   const input = document.getElementById("w-input");
   const feedback = document.getElementById("w-feedback");
   const moreBtn = document.getElementById("w-more");
-  attachAutocomplete(input, COMPOSER_NAMES);
+  attachAutocomplete(input, COMPOSER_NAMES, COMPOSER_EXTRA);
 
   const draw = () => {
     document.getElementById("w-clue-head").innerHTML =

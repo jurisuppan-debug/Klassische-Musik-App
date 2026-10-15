@@ -19,13 +19,13 @@ const COMPOSERS = [
     works: ["Der Messias", "Wassermusik", "Feuerwerksmusik", "Zadok the Priest", "Rinaldo"] },
   { id: "pachelbel", name: "Johann Pachelbel", born: 1653, died: 1706, country: "Deutschland", period: "barock", wiki: "Johann Pachelbel",
     short: "Nürnberger Organist – berühmt für einen einzigen, unsterblichen Kanon.",
-    // Von Pachelbel ist kein echtes Porträt erhalten; das oft gezeigte Bild zeigt Johann Christoph Pachelbel.
+    // Ein gesichertes Porträt gibt es nicht; dieses Bild wird ihm traditionell zugeordnet.
     image: {
-      src: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Gedenktafel_f%C3%BCr_Johann_Pachelbel.jpg/500px-Gedenktafel_f%C3%BCr_Johann_Pachelbel.jpg",
-      alt: "Gedenktafel für Johann Pachelbel an St. Sebald in Nürnberg",
-      note: "Von Pachelbel ist kein Porträt erhalten. Das Bild zeigt seine Gedenktafel an St. Sebald in Nürnberg, wo er Organist war.",
-      credit: "Martin Brons, CC BY-SA 4.0",
-      page: "https://commons.wikimedia.org/wiki/File:Gedenktafel_f%C3%BCr_Johann_Pachelbel.jpg",
+      src: "https://upload.wikimedia.org/wikipedia/commons/6/61/Portrait_des_Johann_Christoph_Pachelbel_-_1748.jpg",
+      alt: "Porträt, das traditionell Johann Pachelbel zugeordnet wird",
+      note: "Dieses Porträt wird traditionell Pachelbel zugeordnet. Es entstand allerdings erst 1748 und zeigt nach heutigem Wissen wohl Johann Christoph Pachelbel.",
+      credit: "unbekannter Künstler, gemeinfrei",
+      page: "https://commons.wikimedia.org/wiki/File:Portrait_des_Johann_Christoph_Pachelbel_-_1748.jpg",
     },
     works: ["Kanon und Gigue in D-Dur", "Hexachordum Apollinis", "Choralvorspiele für Orgel"] },
 

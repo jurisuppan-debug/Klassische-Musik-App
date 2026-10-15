@@ -866,5 +866,10 @@ function route() {
 }
 
 window.addEventListener("hashchange", route);
+
+// Service Worker registrieren, damit sich die App auf dem Handy installieren lässt.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
 loadPortraits();
 route();

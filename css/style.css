@@ -130,6 +130,8 @@ input[type=search], select {
 .detail { display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start; }
 @media (max-width: 760px) { .detail { grid-template-columns: 1fr; } .detail .portrait { max-width: 260px; } }
 .detail .portrait { border-radius: var(--radius); box-shadow: var(--shadow); }
+.detail-figure { margin: 0; }
+.detail-figure figcaption { display: block; margin-top: 8px; line-height: 1.45; }
 .facts { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; color: var(--muted); margin-bottom: 14px; }
 .lead { font-family: var(--serif); font-size: 1.35rem; font-style: italic; margin: 0 0 16px; }
 .bio p { margin: 0 0 12px; }

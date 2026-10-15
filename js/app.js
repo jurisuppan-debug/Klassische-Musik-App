@@ -50,10 +50,12 @@ function loadPortraits() {
   return portraitsPromise;
 }
 
+// Eigenes Bild (c.image) hat Vorrang vor dem Wikipedia-Porträt.
 function portraitHtml(c) {
-  const src = portraits && portraits[c.wiki];
+  const src = c.image ? c.image.src : portraits && portraits[c.wiki];
+  const alt = c.image ? c.image.alt : `Porträt von ${c.name}`;
   return `<div class="portrait" data-portrait="${c.id}">${
-    src ? `<img src="${esc(src)}" alt="Porträt von ${esc(c.name)}" loading="lazy">`
+    src ? `<img src="${esc(src)}" alt="${esc(alt)}" loading="lazy">`
         : `<span class="initials">${esc(initials(c.name))}</span>`}</div>`;
 }
 
@@ -80,6 +82,7 @@ function loadBio(c) {
       const page = Object.values(json.query.pages)[0];
       const text = (page.extract || "")
         .replace(/\s*\[[^\]]*\]\s*/g, " ")   // Lautschrift wie [ˈbax] entfernen
+        .replace(/(\S)(jul|greg)\./g, "$1")   // Kalender-Hinweise wie „Märzjul.“ entfernen
         .replace(/ {2,}/g, " ");
       bioCache[c.id] = text.split("\n").map(s => s.trim()).filter(Boolean);
       return bioCache[c.id];
@@ -199,7 +202,11 @@ function renderComposer(id) {
   app.innerHTML = `
     <a class="back" href="#/komponisten">← Alle Komponisten</a>
     <article class="detail">
-      ${portraitHtml(c)}
+      <figure class="detail-figure">
+        ${portraitHtml(c)}
+        ${c.image ? `<figcaption class="credit">${esc(c.image.note)}<br>
+          Foto: <a href="${esc(c.image.page)}" target="_blank" rel="noopener">${esc(c.image.credit)}</a></figcaption>` : ""}
+      </figure>
       <div>
         <h1>${esc(c.name)}</h1>
         <div class="facts">

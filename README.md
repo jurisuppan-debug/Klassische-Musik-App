@@ -12,10 +12,10 @@ Die Aufnahmen stammen von Wikimedia Commons (gemeinfrei oder freie Lizenz, Angab
 Es braucht nichts außer Python (ist auf dem Mac vorinstalliert):
 
 ```bash
-python3 -m http.server 8000
+python3 server.py
 ```
 
-Dann im Browser <http://localhost:8000> öffnen.
+Dann im Browser <http://localhost:8000> öffnen. Der Server sagt dem Browser, dass er nichts zwischenspeichern soll – Änderungen sind also sofort sichtbar.
 
 ## Aufbau
 
@@ -26,5 +26,6 @@ Dann im Browser <http://localhost:8000> öffnen.
 | `js/composers.js` | Epochen und Komponisten (Lebensdaten, Kurztext, Werke) |
 | `js/pieces.js` | Musikstücke mit Link zur Aufnahme |
 | `js/app.js` | Seiten, Lexikon und Quiz |
+| `server.py` | Lokaler Server ohne Browser-Cache |
 
 Neuen Komponisten hinzufügen: Eintrag in `js/composers.js` ergänzen (`wiki` = Titel des deutschen Wikipedia-Artikels). Neues Stück: Eintrag in `js/pieces.js` mit MP3-Link von Wikimedia Commons.
